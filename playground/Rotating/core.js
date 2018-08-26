@@ -2,9 +2,8 @@ var renderer, scene, camera;
 var hemiSphereLight, directionalLight;
 var sphereMesh, sphereGeo;
 var orbitControl;
-var mouse = new THREE.Vector2();
-var raycaster = new THREE.Raycaster();
-var mouseOverObject;
+
+
 
 var clock;
 
@@ -48,7 +47,6 @@ function init() {
 
 	//注册事件
 	window.addEventListener( 'resize', onWindowReSize, false );
-	window.addEventListener( 'mousemove', onMouseMove, false );
 
 }
 
@@ -88,50 +86,68 @@ function update() {
 
 	requestAnimationFrame( update );
 
-
-	raycaster.setFromCamera( mouse, camera );
-
-	var intersects = raycaster.intersectObjects( scene.children );
-
-	//若鼠标在物体上面
-	if ( intersects.length > 0 ) {
-
-		//只有当前物体不等于缓存的物体时才执行
-		if ( mouseOverObject != intersects[ 0 ].object ) {
-
-			//如果是从一个物体直接移动到另外一个物体上，需要先把原先的物体还原
-			if ( mouseOverObject ) {
-
-				mouseOverObject.material.emissive.setHex(
-					mouseOverObject.originalEmissive
-				);
-
-			}
-
-			//物体切换，存储旧值，设置新值
-			mouseOverObject = intersects[ 0 ].object;
-			mouseOverObject.originalEmissive = mouseOverObject.material.emissive.getHex();
-			mouseOverObject.material.emissive.setHex( 0xff0000 );
-
-		}
-
-	} else {
-
-		if ( mouseOverObject ) {
-
-			mouseOverObject.material.emissive.setHex(
-				mouseOverObject.originalEmissive
-			);
-			mouseOverObject = null;
-
-		}
-
-	}
+	animate();
 
 	renderer.render( scene, camera );
 
 }
 
+function animate() {
+
+	var deltaTime = clock.getDelta();
+	console.log( deltaTime );
+
+	scene.traverse( function ( item ) {
+
+		if ( item instanceof THREE.Mesh ) {
+
+			//item.rotateOnAxis( new THREE.Vector3( 0, 1, 0 ), THREE.Math.degToRad( 100 ) * deltaTime );
+			//item.rotation.x += THREE.Math.degToRad( 100 ) * deltaTime;
+			//calcRotationIn3D( item, new THREE.Vector3( 0, THREE.Math.degToRad( 50 ) * deltaTime, 0 ) );
+			calcRotationAroundAxis( item, 'y', THREE.Math.degToRad( 50 ) * deltaTime );
+
+		}
+
+	} );
+
+}
+
+//旋转方法1
+function calcRotationAroundAxis( obj3D, axis, angle ) {
+
+	var euler;
+
+	if ( axis === 'x' ) {
+
+		euler = new THREE.Euler( angle, 0, 0, 'XYZ' );
+
+	}
+
+	if ( axis === 'y' ) {
+
+		euler = new THREE.Euler( 0, angle, 0, 'XYZ' );
+
+	}
+
+	if ( axis === 'z' ) {
+
+		euler = new THREE.Euler( 0, 0, angle, 'XYZ' );
+
+	}
+	obj3D.position.applyEuler( euler );
+
+}
+
+//旋转方法2
+function calcRotationIn3D( obj3D, angles, order = 'XYZ' ) {
+
+	var euler;
+
+	euler = new THREE.Euler( angles.x, angles.y, angles.z, order );
+
+	obj3D.position.applyEuler( euler );
+
+}
 
 //当窗口发生变化
 function onWindowReSize( e ) {
@@ -145,13 +161,7 @@ function onWindowReSize( e ) {
 
 }
 
-function onMouseMove( event ) {
 
-	event.preventDefault();
-	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-
-}
 
 init();
 createMesh();
